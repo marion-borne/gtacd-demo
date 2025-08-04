@@ -1,4 +1,4 @@
-name: Déploiement Automatisé
+name: Déploiement sur VM locale
 
 on:
   push:
@@ -21,12 +21,8 @@ jobs:
 
       - name: Connexion SSH et déploiement
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key deployer@192.168.248.147 << 'EOF'
-            mkdir -p ~/deploiement
-            exit
-          EOF
+          ssh -o StrictHostKeyChecking=no -i private_key deployer@192.168.248.147 "echo 'Connexion OK depuis GitHub Actions'"
 
       - name: Copier le fichier index.html sur la VM
         run: |
-          scp -o StrictHostKeyChecking=no -i private_key ./index.html deployer@192.168.248.147:~/deploiement/
-
+          scp -o StrictHostKeyChecking=no -i private_key index.html deployer@192.168.248.147:/home/deployer/index.html
