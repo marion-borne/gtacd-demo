@@ -12,30 +12,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Installer la clé privée (ed25519)
+      - name: Installer la clé privée (CI)
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-
-      - name: Vérifier que la clé est valide pour ssh
-        run: |
-          set -e
-          head -1 ~/.ssh/id_ed25519
-          tail -1 ~/.ssh/id_ed25519
-          echo "--- fingerprint ---"
-          ssh-keygen -lf ~/.ssh/id_ed25519
-          echo "--- public dérivée ---"
-          ssh-keygen -y -f ~/.ssh/id_ed25519 | head -c 80; echo
-          # si cette commande échoue => clé invalide (secret mal collé)
-
-      - name: Pré-enregistrer l'hôte
-        run: |
+          # écrit la clé sans \r Windows
+          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/ci_deploy_key
+          chmod 600 ~/.ssh/ci_deploy_key
           ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Test SSH non interactif
+      - name: Test SSH non interactif (debug)
         run: |
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
-              -i ~/.ssh/id_ed25519 "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}" \
-              "echo 'Connexion OK depuis GitHub Actions'"
+          ssh -vvv \
+            -o AddressFamily=inet \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
+            -i ~/.ssh/ci_deploy_key \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}" \
+            "echo 'Connexion OK depuis GitHub Actions'"
