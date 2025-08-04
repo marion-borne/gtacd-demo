@@ -1,0 +1,33 @@
+name: Déploiement Automatisé
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Déploiement sur VM locale
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout du dépôt
+      uses: actions/checkout@v4
+
+    - name: Créer le fichier de clé privée
+      run: |
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
+        chmod 600 private_key
+
+    - name: Connexion SSH et déploiement
+      run: |
+        ssh -o StrictHostKeyChecking=no -i private_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          echo "✅ Connexion SSH établie"
+          mkdir -p ~/site_web
+          rm -rf ~/site_web/index.html
+          exit
+        EOF
+
+    - name: Copier le fichier index.html sur la VM
+      run: |
+        scp -o StrictHostKeyChecking=no -i private_key ./app/index.html ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/site_web/index.html
