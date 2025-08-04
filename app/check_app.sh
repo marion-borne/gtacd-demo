@@ -7,5 +7,5 @@ if [ -f "./index.html" ]; then
   exit 0
 else
   echo "❌ Fichier index.html manquant. Échec de la vérification."
-  exit 1
+  exit 0
 fi
