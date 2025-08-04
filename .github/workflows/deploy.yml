@@ -12,17 +12,13 @@ jobs:
 
     steps:
       - name: Checkout du dépôt
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Créer le fichier de clé privée
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
-          chmod 600 private_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
       - name: Connexion SSH et déploiement
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key deployer@192.168.248.147 "echo 'Connexion OK depuis GitHub Actions'"
-
-      - name: Copier le fichier index.html sur la VM
-        run: |
-          scp -o StrictHostKeyChecking=no -i private_key index.html deployer@192.168.248.147:/home/deployer/index.html
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa deployer@192.168.248.147 "echo 'Connexion OK depuis GitHub Actions'"
