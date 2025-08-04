@@ -24,10 +24,10 @@ jobs:
         ssh -o StrictHostKeyChecking=no -i private_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           echo "✅ Connexion SSH établie"
           mkdir -p ~/site_web
-          rm -rf ~/site_web/index.html
-          exit
+          rm -f ~/site_web/index.html
         EOF
 
     - name: Copier le fichier index.html sur la VM
       run: |
-        scp -o StrictHostKeyChecking=no -i private_key ./app/index.html ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/site_web/index.html
+        scp -o StrictHostKeyChecking=no -i private_key ./app/index.html ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/site_web/
+
