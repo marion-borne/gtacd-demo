@@ -2,37 +2,40 @@ name: Déploiement sur VM locale
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy:
-    name: Déploiement sur VM locale
     runs-on: self-hosted
 
     steps:
-      - name: Checkout du dépôt
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Installer la clé SSH privée
+      - name: Installer la clé privée (ed25519)
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Écrit la clé en supprimant les \r éventuels (copie Windows)
-          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          # Optionnel : pré-enregistrer la clé d’hôte pour éviter la question d’empreinte
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
-      - name: Connexion SSH et déploiement (test)
+      - name: Vérifier que la clé est valide pour ssh
         run: |
-          ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 \
-              -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
-              "echo 'Connexion OK depuis GitHub Actions'"
+          set -e
+          head -1 ~/.ssh/id_ed25519
+          tail -1 ~/.ssh/id_ed25519
+          echo "--- fingerprint ---"
+          ssh-keygen -lf ~/.ssh/id_ed25519
+          echo "--- public dérivée ---"
+          ssh-keygen -y -f ~/.ssh/id_ed25519 | head -c 80; echo
+          # si cette commande échoue => clé invalide (secret mal collé)
 
-      # Exemple de copie de fichier (si tu veux tester le transfert)
-      # - name: Copier index.html sur la VM
-      #   run: |
-      #     scp -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 \
-      #         -i ~/.ssh/id_rsa app/index.html \
-      #         ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/site_web/index.html
+      - name: Pré-enregistrer l'hôte
+        run: |
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Test SSH non interactif
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+              -i ~/.ssh/id_ed25519 "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}" \
+              "echo 'Connexion OK depuis GitHub Actions'"
