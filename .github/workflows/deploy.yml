@@ -1,4 +1,3 @@
-# Relance du workflow pour test SSH
 name: Déploiement sur VM locale
 
 on:
@@ -13,14 +12,27 @@ jobs:
 
     steps:
       - name: Checkout du dépôt
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Créer le fichier de clé privée
+      - name: Installer la clé SSH privée
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+          # Écrit la clé en supprimant les \r éventuels (copie Windows)
+          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Optionnel : pré-enregistrer la clé d’hôte pour éviter la question d’empreinte
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Connexion SSH et déploiement
+      - name: Connexion SSH et déploiement (test)
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa deployer@192.168.248.147 "echo 'Connexion OK depuis GitHub Actions'"
+          ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 \
+              -i ~/.ssh/id_rsa ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+              "echo 'Connexion OK depuis GitHub Actions'"
+
+      # Exemple de copie de fichier (si tu veux tester le transfert)
+      # - name: Copier index.html sur la VM
+      #   run: |
+      #     scp -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 \
+      #         -i ~/.ssh/id_rsa app/index.html \
+      #         ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/site_web/index.html
