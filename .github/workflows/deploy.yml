@@ -8,26 +8,25 @@ on:
 jobs:
   deploy:
     name: Déploiement sur VM locale
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-    - name: Checkout du dépôt
-      uses: actions/checkout@v4
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
 
-    - name: Créer le fichier de clé privée
-      run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
-        chmod 600 private_key
+      - name: Créer le fichier de clé privée
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
+          chmod 600 private_key
 
-    - name: Connexion SSH et déploiement
-      run: |
-        ssh -o StrictHostKeyChecking=no -i private_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          echo "✅ Connexion SSH établie"
-          mkdir -p ~/site_web
-          rm -f ~/site_web/index.html
-        EOF
+      - name: Connexion SSH et déploiement
+        run: |
+          ssh -o StrictHostKeyChecking=no -i private_key deployer@192.168.248.147 << 'EOF'
+            mkdir -p ~/deploiement
+            exit
+          EOF
 
-    - name: Copier le fichier index.html sur la VM
-      run: |
-        scp -o StrictHostKeyChecking=no -i private_key ./app/index.html ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:~/site_web/
+      - name: Copier le fichier index.html sur la VM
+        run: |
+          scp -o StrictHostKeyChecking=no -i private_key ./index.html deployer@192.168.248.147:~/deploiement/
 
